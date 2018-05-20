@@ -716,10 +716,14 @@ public msg_statusicon(msgid, dest, id)
 }
 
 public msg_weaponpickup(msgid, dest, id)
+{
 	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+}
 
 public msg_ammopickup(msgid, dest, id)
+{
 	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+}
 
 public msg_deathmsg(msgid, dest, id) 
 {
