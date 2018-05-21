@@ -450,6 +450,7 @@ public plugin_init()
 	RegisterHam(Ham_Touch, "armoury_entity", "bacon_touch_weapon")
 	RegisterHam(Ham_Touch, "weapon_shield", "bacon_touch_weapon")
 	RegisterHam(Ham_Touch, "grenade", "bacon_touch_grenade")
+	RegisterHam(Ham_Item_Deploy, "weapon_knife", "bacon_knife_deploy_post", 1)
 	
 	register_message(get_user_msgid("Health"), "msg_health")
 	register_message(get_user_msgid("TextMsg"), "msg_textmsg")
@@ -1473,6 +1474,20 @@ public bacon_traceattack_pushable(ent, attacker, Float:damage, Float:direction[3
 	set_pev(ent, pev_velocity, velocity)
 	
 	return HAM_HANDLED
+}
+
+public bacon_knife_deploy_post(ent)
+{
+	new id = get_ent_data_entity(ent, "CBasePlayerItem", "m_pPlayer");
+	if (is_user_connected(id))
+	{
+		// viewmodel2
+		if (g_zombie[id])
+		{
+			set_pev(id, pev_weaponmodel2, "")
+			set_pev(id, pev_viewmodel2, g_class_wmodel[g_player_class[id]])
+		}
+	}
 }
 
 public task_spawned(taskid)
