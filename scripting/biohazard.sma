@@ -671,7 +671,7 @@ public msg_teaminfo(msgid, dest, id)
 	id = randomly_pick_zombie()
 	if(id)
 	{
-		fm_set_user_team(id, g_zombie[id] ? CS_TEAM_CT : CS_TEAM_T, 0)
+		cs_set_user_team(id, g_zombie[id] ? CS_TEAM_CT : CS_TEAM_T, CS_NORESET, false);
 		set_pev(id, pev_deadflag, DEAD_RESPAWNABLE)
 	}
 	return PLUGIN_CONTINUE
@@ -1531,7 +1531,7 @@ public task_spawned(taskid)
 			team = fm_get_user_team(id)
 			
 			if(team == CS_TEAM_T)
-				fm_set_user_team(id, CS_TEAM_CT)
+				cs_set_user_team(id, CS_TEAM_CT, CS_NORESET, true);
 		}
 	}
 }
@@ -1754,7 +1754,7 @@ public task_initround()
 			infect_user(id, 0)
 		else
 		{
-			fm_set_user_team(id, CS_TEAM_CT, 0)
+			cs_set_user_team(id, CS_TEAM_CT, CS_NORESET, false)
 			add_delay(id, "update_team")
 		}
 	}
@@ -1810,12 +1810,12 @@ public task_balanceteam()
 	if(count[CS_TEAM_T] > maxplayers)
 	{
 		for(i = 0; i < (count[CS_TEAM_T] - maxplayers); i++)
-			fm_set_user_team(players[CS_TEAM_T][i], CS_TEAM_CT, 0)
+			cs_set_user_team(players[CS_TEAM_T][i], CS_TEAM_CT, CS_NORESET, false);
 	}
 	else
 	{
 		for(i = 0; i < (count[CS_TEAM_CT] - maxplayers); i++)
-			fm_set_user_team(players[CS_TEAM_CT][i], CS_TEAM_T, 0)
+			cs_set_user_team(players[CS_TEAM_CT][i], CS_TEAM_T, CS_NORESET, false);
 	}
 }
 
@@ -1884,7 +1884,7 @@ public infect_user(victim, attacker)
 		ShowSyncHudMsg(victim, g_sync_msgdisplay, "%L", victim, "MUTATION_HUD", g_class_name[g_player_class[victim]])
 	}
 	
-	fm_set_user_team(victim, CS_TEAM_T)
+	cs_set_user_team(victim, CS_TEAM_T, CS_NORESET, true);
 	set_zombie_attibutes(victim)
 	
 	emit_sound(victim, CHAN_STATIC, g_scream_sounds[_random(sizeof g_scream_sounds)], VOL_NORM, ATTN_NONE, 0, PITCH_NORM)
@@ -2391,19 +2391,6 @@ stock bacon_strip_weapon(index, weapon[])
 	ExecuteHamB(Ham_Item_Kill, weaponent)
 	set_pev(index, pev_weapons, pev(index, pev_weapons) & ~(1<<weaponid))
 
-	return 1
-}
-
-stock fm_set_user_team(index, team, update = 1)
-{
-	set_pdata_int(index, OFFSET_TEAM, team)
-	if(update)
-	{
-		emessage_begin(MSG_ALL, g_msg_teaminfo)
-		ewrite_byte(index)
-		ewrite_string(g_teaminfo[team])
-		emessage_end()
-	}
 	return 1
 }
 
