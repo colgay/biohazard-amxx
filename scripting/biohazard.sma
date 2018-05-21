@@ -276,11 +276,13 @@ new const g_teaminfo[][] =
 new g_maxplayers, g_spawncount, g_buyzone, g_botclient_pdata, g_sync_hpdisplay, 
     g_sync_msgdisplay, g_fwd_spawn, g_fwd_result, g_fwd_infect, g_fwd_gamestart, 
     g_msg_flashlight, g_msg_teaminfo, g_msg_scoreattrib, g_msg_money, g_msg_scoreinfo, 
-    g_msg_deathmsg , g_msg_screenfade, Float:g_buytime,  Float:g_spawns[MAX_SPAWNS+1][9],
+    g_msg_deathmsg , g_msg_screenfade, g_msg_damage;
+	
+new	Float:g_buytime,  Float:g_spawns[MAX_SPAWNS+1][9],
     Float:g_vecvel[3], bool:g_brestorevel, bool:g_infecting, bool:g_gamestarted,
     bool:g_roundstarted, bool:g_roundended, bool:g_czero, g_class_name[MAX_CLASSES+1][32], 
     g_classcount, g_class_desc[MAX_CLASSES+1][32], g_class_pmodel[MAX_CLASSES+1][64], 
-    g_class_wmodel[MAX_CLASSES+1][64], Float:g_class_data[MAX_CLASSES+1][MAX_DATA]
+    g_class_wmodel[MAX_CLASSES+1][64], Float:g_class_data[MAX_CLASSES+1][MAX_DATA];
     
 new cvar_randomspawn, cvar_skyname, cvar_autoteambalance[4], cvar_starttime, cvar_autonvg, 
     cvar_winsounds, cvar_weaponsmenu, cvar_lights, cvar_killbonus, cvar_enabled, 
@@ -481,6 +483,7 @@ public plugin_init()
 	g_msg_deathmsg = get_user_msgid("DeathMsg")
 	g_msg_money = get_user_msgid("Money")
 	g_msg_screenfade = get_user_msgid("ScreenFade")
+	g_msg_damage = get_user_msgid("Damage");
 	
 	g_fwd_infect = CreateMultiForward("event_infect", ET_IGNORE, FP_CELL, FP_CELL)
 	g_fwd_gamestart = CreateMultiForward("event_gamestart", ET_IGNORE)
@@ -997,6 +1000,17 @@ public event_damage(victim)
 			write_byte(victim)
 			write_byte(0)
 			message_end()
+
+			message_begin(MSG_ONE, g_msg_damage, _, victim);
+			write_byte(read_data(1)); // dmg save
+			write_byte(64); // dmg take
+			write_byte(read_data(3)); // dmg type
+			write_coord(read_data(4)); // x
+			write_coord(read_data(5)); // y
+			write_coord(read_data(6)); // z
+			message_end();
+
+			set_ent_data_float(victim, "CBasePlayer", "m_flVelocityModifier", 0.0);
 			
 			infect_user(victim, attacker)
 			
