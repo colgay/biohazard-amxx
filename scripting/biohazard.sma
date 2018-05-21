@@ -31,6 +31,7 @@
 
 #include <amxmodx>
 #include <amxmisc>
+#include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -139,17 +140,17 @@ enum
 
 enum
 {
-	CS_TEAM_UNASSIGNED = 0,
-	CS_TEAM_T,
-	CS_TEAM_CT,
-	CS_TEAM_SPECTATOR
+	TEAM_UNASSIGNED = 0,
+	TEAM_T,
+	TEAM_CT,
+	TEAM_SPECTATOR
 }
 
 enum
 {
-	CS_ARMOR_NONE = 0,
-	CS_ARMOR_KEVLAR,
-	CS_ARMOR_VESTHELM
+	ARMOR_NONE = 0,
+	ARMOR_KEVLAR,
+	ARMOR_VESTHELM
 }
 
 enum
@@ -290,10 +291,10 @@ new cvar_randomspawn, cvar_skyname, cvar_autoteambalance[4], cvar_starttime, cva
     cvar_knockback_duck, cvar_killreward, cvar_painshockfree, cvar_zombie_class,
     cvar_shootobjects, cvar_pushpwr_weapon, cvar_pushpwr_zombie
     
-new bool:g_zombie[33], bool:g_falling[33], bool:g_disconnected[33], bool:g_blockmodel[33], 
-    bool:g_showmenu[33], bool:g_menufailsafe[33], bool:g_preinfect[33], bool:g_welcomemsg[33], 
-    bool:g_suicide[33], Float:g_regendelay[33], Float:g_hitdelay[33], g_mutate[33], g_victim[33], 
-    g_modelent[33], g_menuposition[33], g_player_class[33], g_player_weapons[33][2]
+new bool:g_zombie[MAX_PLAYERS+1], bool:g_falling[MAX_PLAYERS+1], bool:g_disconnected[MAX_PLAYERS+1], bool:g_blockmodel[MAX_PLAYERS+1], 
+    bool:g_showmenu[MAX_PLAYERS+1], bool:g_menufailsafe[MAX_PLAYERS+1], bool:g_preinfect[MAX_PLAYERS+1], bool:g_welcomemsg[MAX_PLAYERS+1], 
+    bool:g_suicide[MAX_PLAYERS+1], Float:g_regendelay[MAX_PLAYERS+1], Float:g_hitdelay[MAX_PLAYERS+1], g_mutate[MAX_PLAYERS+1], g_victim[MAX_PLAYERS+1], 
+	g_menuposition[MAX_PLAYERS+1], g_player_class[MAX_PLAYERS+1], g_player_weapons[33][2]
 
 public plugin_precache()
 {
@@ -575,7 +576,7 @@ public client_putinserver(id)
 		g_player_class[id] = _random(g_classcount)
 }
 
-public client_disconnect(id)
+public client_disconnected(id)
 {
 	remove_task(TASKID_STRIPNGIVE + id)
 	remove_task(TASKID_UPDATESCR + id)
@@ -671,7 +672,7 @@ public msg_teaminfo(msgid, dest, id)
 	id = randomly_pick_zombie()
 	if(id)
 	{
-		cs_set_user_team(id, g_zombie[id] ? CS_TEAM_CT : CS_TEAM_T, CS_NORESET, false);
+		cs_set_user_team(id, g_zombie[id] ? TEAM_CT : TEAM_T, CS_NORESET, false);
 		set_pev(id, pev_deadflag, DEAD_RESPAWNABLE)
 	}
 	return PLUGIN_CONTINUE
@@ -812,7 +813,7 @@ public logevent_round_start()
 		for(id = 1; id <= g_maxplayers; id++) if(is_user_alive(id))
 		{
 			team = fm_get_user_team(id)
-			if(team == CS_TEAM_T || team == CS_TEAM_CT)
+			if(team == TEAM_T || team == TEAM_CT)
 			{
 				if(is_user_bot(id)) 
 					bot_weapons(id)
@@ -953,8 +954,8 @@ public event_armortype(id)
 	if(!is_user_alive(id) || !g_zombie[id])
 		return PLUGIN_CONTINUE
 	
-	if(fm_get_user_armortype(id) != CS_ARMOR_NONE)
-		fm_set_user_armortype(id, CS_ARMOR_NONE)
+	if(fm_get_user_armortype(id) != ARMOR_NONE)
+		fm_set_user_armortype(id, ARMOR_NONE)
 	
 	return PLUGIN_CONTINUE
 }
@@ -1398,7 +1399,7 @@ public bacon_spawn_player_post(id)
 	static team
 	team = fm_get_user_team(id)
 	
-	if(team != CS_TEAM_T && team != CS_TEAM_CT)
+	if(team != TEAM_T && team != TEAM_CT)
 		return HAM_IGNORED
 	
 	if(g_zombie[id])
@@ -1530,7 +1531,7 @@ public task_spawned(taskid)
 			static team
 			team = fm_get_user_team(id)
 			
-			if(team == CS_TEAM_T)
+			if(team == TEAM_T)
 				cs_set_user_team(id, CS_TEAM_CT, CS_NORESET, true);
 		}
 	}
@@ -1547,7 +1548,7 @@ public task_checkspawn(taskid)
 	static team
 	team = fm_get_user_team(id)
 	
-	if(team == CS_TEAM_T || team == CS_TEAM_CT)
+	if(team == TEAM_T || team == TEAM_CT)
 		ExecuteHamB(Ham_CS_RoundRespawn, id)
 }
 	
@@ -1678,7 +1679,7 @@ public task_newround()
 		id = players[i]
 		
 		team = fm_get_user_team(id)
-		if(team != CS_TEAM_T && team != CS_TEAM_CT || pev(id, pev_iuser1))
+		if(team != TEAM_T && team != TEAM_CT || pev(id, pev_iuser1))
 			continue
 		
 		static spawn_index
@@ -1786,36 +1787,36 @@ public task_startround()
 public task_balanceteam()
 {
 	static players[3][32], count[3]
-	get_players(players[CS_TEAM_UNASSIGNED], count[CS_TEAM_UNASSIGNED])
+	get_players(players[TEAM_UNASSIGNED], count[TEAM_UNASSIGNED])
 	
-	count[CS_TEAM_T] = 0
-	count[CS_TEAM_CT] = 0
+	count[TEAM_T] = 0
+	count[TEAM_CT] = 0
 	
 	static i, id, team
-	for(i = 0; i < count[CS_TEAM_UNASSIGNED]; i++)
+	for(i = 0; i < count[TEAM_UNASSIGNED]; i++)
 	{
-		id = players[CS_TEAM_UNASSIGNED][i] 
+		id = players[TEAM_UNASSIGNED][i] 
 		team = fm_get_user_team(id)
 		
-		if(team == CS_TEAM_T || team == CS_TEAM_CT)
+		if(team == TEAM_T || team == TEAM_CT)
 			players[team][count[team]++] = id
 	}
 
-	if(abs(count[CS_TEAM_T] - count[CS_TEAM_CT]) <= 1) 
+	if(abs(count[TEAM_T] - count[TEAM_CT]) <= 1) 
 		return
 
 	static maxplayers
-	maxplayers = (count[CS_TEAM_T] + count[CS_TEAM_CT]) / 2
+	maxplayers = (count[TEAM_T] + count[TEAM_CT]) / 2
 	
-	if(count[CS_TEAM_T] > maxplayers)
+	if(count[TEAM_T] > maxplayers)
 	{
-		for(i = 0; i < (count[CS_TEAM_T] - maxplayers); i++)
-			cs_set_user_team(players[CS_TEAM_T][i], CS_TEAM_CT, CS_NORESET, false);
+		for(i = 0; i < (count[TEAM_T] - maxplayers); i++)
+			cs_set_user_team(players[TEAM_T][i], CS_TEAM_CT, CS_NORESET, false);
 	}
 	else
 	{
-		for(i = 0; i < (count[CS_TEAM_CT] - maxplayers); i++)
-			cs_set_user_team(players[CS_TEAM_CT][i], CS_TEAM_T, CS_NORESET, false);
+		for(i = 0; i < (count[TEAM_CT] - maxplayers); i++)
+			cs_set_user_team(players[TEAM_CT][i], CS_TEAM_T, CS_NORESET, false);
 	}
 }
 
@@ -1851,7 +1852,7 @@ public update_team(id)
 	static team
 	team = fm_get_user_team(id)
 	
-	if(team == CS_TEAM_T || team == CS_TEAM_CT)
+	if(team == TEAM_T || team == TEAM_CT)
 	{
 		emessage_begin(MSG_ALL, g_msg_teaminfo)
 		ewrite_byte(id)
@@ -2505,7 +2506,7 @@ stock set_zombie_attibutes(index)
 	set_pev(index, pev_renderamt, 0.0)
 	set_pev(index, pev_rendermode, kRenderTransTexture)
 	
-	fm_set_user_armortype(index, CS_ARMOR_NONE)
+	fm_set_user_armortype(index, ARMOR_NONE)
 	fm_set_user_nvg(index)
 	
 	if(get_pcvar_num(cvar_autonvg)) 
