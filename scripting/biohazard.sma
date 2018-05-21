@@ -897,6 +897,7 @@ public event_curweapon(id)
 	static weapon
 	weapon = read_data(2)
 	
+	/*
 	if(g_zombie[id])
 	{
 		if(weapon != CSW_KNIFE && !task_exists(TASKID_STRIPNGIVE + id))
@@ -904,6 +905,7 @@ public event_curweapon(id)
 		
 		return PLUGIN_CONTINUE
 	}
+	*/
 
 	static ammotype
 	ammotype = get_pcvar_num(cvar_ammo)
@@ -997,6 +999,22 @@ public event_damage(victim)
 			write_byte(victim)
 			write_byte(0)
 			message_end()
+
+			new origini[3];
+			get_user_origin(attacker, origini);
+
+			// fake damage effect
+			message_begin(MSG_ONE, g_msg_damage, _, victim);
+			write_byte(read_data(1)); // DamageSave
+			write_byte(64); // DamageTake ??
+			write_long(read_data(3)); // DamageType 
+			write_coord(read_data(4)); // CoordX 
+			write_coord(read_data(5)); // CoordY
+			write_coord(read_data(6)); // CoordZ
+			message_end();
+
+			// slow down
+			set_ent_data(victim, "CBasePlayer", "m_flVelocityModifier", 0.0);
 			
 			infect_user(victim, attacker)
 			
@@ -1327,7 +1345,9 @@ public bacon_takedamage_player(victim, inflictor, attacker, Float:damage, damage
 			g_victim[attacker] = infect ? victim : 0
 					
 			if(!g_infecting)
+			{
 				SetHamParamFloat(4, infect ? 0.0 : damage)
+			}
 			else	
 				SetHamParamFloat(4, 0.0)
 		}
