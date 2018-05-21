@@ -1427,7 +1427,7 @@ public bacon_spawn_player_post(id)
 		else
 			cure_user(id)
 	}
-	else if(pev(id, pev_rendermode) == kRenderTransTexture)
+	else
 		cs_reset_user_model(id)
 	
 	set_task(0.3, "task_spawned", TASKID_SPAWNDELAY + id)
@@ -2517,8 +2517,8 @@ stock set_zombie_attibutes(index)
 	set_pev(index, pev_gravity, g_class_data[g_player_class[index]][DATA_GRAVITY])
 	set_pev(index, pev_body, 0)
 	set_pev(index, pev_armorvalue, 0.0)
-	set_pev(index, pev_renderamt, 0.0)
-	set_pev(index, pev_rendermode, kRenderTransTexture)
+	//set_pev(index, pev_renderamt, 0.0)
+	//set_pev(index, pev_rendermode, kRenderTransTexture)
 	
 	fm_set_user_armortype(index, ARMOR_NONE)
 	fm_set_user_nvg(index)
