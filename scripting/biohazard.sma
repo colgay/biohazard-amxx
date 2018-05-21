@@ -359,7 +359,7 @@ public plugin_precache()
 	new i
 	for(i = 0; i < g_classcount; i++)
 	{
-		precache_model(g_class_pmodel[i])
+		precache_player_model(g_class_pmodel[i])
 		precache_model(g_class_wmodel[i])
 	}
 	
@@ -434,7 +434,6 @@ public plugin_init()
 	register_forward(FM_PlayerPreThink, "fwd_player_prethink")
 	register_forward(FM_PlayerPreThink, "fwd_player_prethink_post", 1)
 	register_forward(FM_PlayerPostThink, "fwd_player_postthink")
-	register_forward(FM_SetClientKeyValue, "fwd_setclientkeyvalue")
 
 	RegisterHam(Ham_TakeDamage, "player", "bacon_takedamage_player")
 	RegisterHam(Ham_Killed, "player", "bacon_killed_player")
@@ -558,7 +557,6 @@ public client_connect(id)
 	g_regendelay[id] = 0.0
 	g_hitdelay[id] = 0.0
 
-	remove_user_model(g_modelent[id])
 }
 
 public client_putinserver(id)
@@ -585,7 +583,6 @@ public client_disconnect(id)
 	remove_task(TASKID_CHECKSPAWN + id)
 
 	g_disconnected[id] = true
-	remove_user_model(g_modelent[id])
 }
 
 public cmd_jointeam(id)
@@ -1209,22 +1206,6 @@ public fwd_clientkill(id)
 		g_suicide[id] = true
 }
 
-public fwd_setclientkeyvalue(id, infobuffer, const key[])
-{
-	if(!equal(key, "model") || !g_blockmodel[id])
-		return FMRES_IGNORED
-	
-	static model[32]
-	fm_get_user_model(id, model, 31)
-	
-	if(equal(model, "gordon"))
-		return FMRES_IGNORED
-	
-	g_blockmodel[id] = false
-	
-	return FMRES_SUPERCEDE
-}
-
 public bacon_touch_weapon(ent, id)
 	return (is_user_alive(id) && g_zombie[id]) ? HAM_SUPERCEDE : HAM_IGNORED
 
@@ -1431,7 +1412,7 @@ public bacon_spawn_player_post(id)
 			cure_user(id)
 	}
 	else if(pev(id, pev_rendermode) == kRenderTransTexture)
-		reset_user_model(id)
+		cs_reset_user_model(id)
 	
 	set_task(0.3, "task_spawned", TASKID_SPAWNDELAY + id)
 	set_task(5.0, "task_checkspawn", TASKID_CHECKSPAWN + id)
@@ -1903,7 +1884,7 @@ public cure_user(id)
 	g_zombie[id] = false
 	g_falling[id] = false
 
-	reset_user_model(id)
+	cs_reset_user_model(id)
 	fm_set_user_nvg(id, 0)
 	set_pev(id, pev_gravity, 1.0)
 	
@@ -2499,26 +2480,6 @@ stock str_count(str[], searchchar)
 	return count
 }
 
-stock reset_user_model(index)
-{
-	set_pev(index, pev_rendermode, kRenderNormal)
-	set_pev(index, pev_renderamt, 0.0)
-
-	if(pev_valid(g_modelent[index]))
-		fm_set_entity_visibility(g_modelent[index], 0)
-}
-
-stock remove_user_model(ent)
-{
-	static id
-	id = pev(ent, pev_owner)
-	
-	if(pev_valid(ent)) 
-		engfunc(EngFunc_RemoveEntity, ent)
-
-	g_modelent[id] = 0
-}
-
 stock set_zombie_attibutes(index)
 {
 	if(!is_user_alive(index)) 
@@ -2548,26 +2509,8 @@ stock set_zombie_attibutes(index)
 	if(get_pcvar_num(cvar_autonvg)) 
 		engclient_cmd(index, "nightvision")
 	
-	if(!pev_valid(g_modelent[index]))
-	{
-		static ent
-		ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
-		if(pev_valid(ent))
-		{
-			engfunc(EngFunc_SetModel, ent, g_class_pmodel[g_player_class[index]])
-			set_pev(ent, pev_classname, MODEL_CLASSNAME)
-			set_pev(ent, pev_movetype, MOVETYPE_FOLLOW)
-			set_pev(ent, pev_aiment, index)
-			set_pev(ent, pev_owner, index)
-				
-			g_modelent[index] = ent
-		}
-	}
-	else
-	{
-		engfunc(EngFunc_SetModel, g_modelent[index], g_class_pmodel[g_player_class[index]])
-		fm_set_entity_visibility(g_modelent[index], 1)
-	}
+	
+	cs_set_user_model(index, g_class_pmodel[g_player_class[index]]);
 
 	static effects
 	effects = pev(index, pev_effects)
@@ -2704,4 +2647,15 @@ stock add_delay(index, const task[])
 		case 17..24: set_task(0.3, task, index)
 		case 25..32: set_task(0.4, task, index)
 	}
+}
+
+stock precache_player_model(const model[])
+{
+	new buffer[128];
+	formatex(buffer, charsmax(buffer), "models/player/%s/%s.mdl", model, model);
+	precache_model(buffer);
+	
+	formatex(buffer, charsmax(buffer), "models/player/%s/%sT.mdl", model, model);
+	if (file_exists(buffer))
+		precache_model(buffer);
 }
