@@ -31,7 +31,9 @@
 
 #include <amxmodx>
 #include <amxmisc>
+#include <fun>
 #include <cstrike>
+#include <engine>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -108,20 +110,16 @@
 #define DATA_HITREGENDLY 9
 #define DATA_KNOCKBACK 10
 
-#define fm_get_user_team(%1) get_pdata_int(%1, OFFSET_TEAM)
-#define fm_get_user_deaths(%1) get_pdata_int(%1, OFFSET_DEATH)
-#define fm_set_user_deaths(%1,%2) set_pdata_int(%1, OFFSET_DEATH, %2)
-#define fm_get_user_money(%1) get_pdata_int(%1, OFFSET_CSMONEY)
-#define fm_get_user_armortype(%1) get_pdata_int(%1, OFFSET_ARMOR)
-#define fm_set_user_armortype(%1,%2) set_pdata_int(%1, OFFSET_ARMOR, %2)
-#define fm_get_weapon_id(%1) get_pdata_int(%1, OFFSET_WEAPONTYPE, EXTRAOFFSET_WEAPONS)
-#define fm_get_weapon_ammo(%1) get_pdata_int(%1, OFFSET_CLIPAMMO, EXTRAOFFSET_WEAPONS)
-#define fm_set_weapon_ammo(%1,%2) set_pdata_int(%1, OFFSET_CLIPAMMO, %2, EXTRAOFFSET_WEAPONS)
-#define fm_reset_user_primary(%1) set_pdata_int(%1, OFFSET_PRIMARYWEAPON, 0)
-#define fm_lastprimary(%1) get_pdata_cbase(id, OFFSET_LASTPRIM)
-#define fm_lastsecondry(%1) get_pdata_cbase(id, OFFSET_LASTSEC)
-#define fm_lastknife(%1) get_pdata_cbase(id, OFFSET_LASTKNI)
-#define fm_get_user_model(%1,%2,%3) engfunc(EngFunc_InfoKeyValue, engfunc(EngFunc_GetInfoKeyBuffer, %1), "model", %2, %3) 
+#define fm_get_user_team(%1) get_ent_data(%1, "CBasePlayer", "m_iTeam")
+#define fm_get_user_deaths(%1) get_ent_data(%1, "CBasePlayer", "m_iDeaths")
+#define fm_get_user_money(%1) get_ent_data(%1, "CBasePlayer", "m_iAccount")
+#define fm_get_user_armortype(%1) get_ent_data(%1, "CBasePlayer", "m_iKevlar")
+#define fm_set_user_armortype(%1,%2) set_ent_data(%1, "CBasePlayer", "m_iKevlar", %2)
+#define fm_get_weapon_id(%1) get_ent_data(%1, "CBasePlayerItem", "m_iId")
+#define fm_reset_user_primary(%1) set_ent_data(%1, "CBasePlayer", "m_bHasPrimary", 0)
+#define fm_lastprimary(%1) get_ent_data_entity(%1, "CBasePlayer", "m_rgpPlayerItems", 1)
+#define fm_lastsecondry(%1) get_ent_data_entity(%1, "CBasePlayer", "m_rgpPlayerItems", 2)
+#define fm_lastknife(%1) get_ent_data_entity(%1, "CBasePlayer", "m_rgpPlayerItems", 3)
 
 #define _random(%1) random_num(0, %1 - 1)
 #define AMMOWP_NULL (1<<0 | 1<<CSW_KNIFE | 1<<CSW_FLASHBANG | 1<<CSW_HEGRENADE | 1<<CSW_SMOKEGRENADE | 1<<CSW_C4)
@@ -279,7 +277,7 @@ new g_maxplayers, g_spawncount, g_buyzone, g_botclient_pdata, g_sync_hpdisplay,
     g_msg_deathmsg , g_msg_screenfade, g_msg_damage;
 	
 new	Float:g_buytime,  Float:g_spawns[MAX_SPAWNS+1][9],
-    Float:g_vecvel[3], bool:g_brestorevel, bool:g_infecting, bool:g_gamestarted,
+    Float:g_vecvel[3], bool:g_brestorevel, bool:g_gamestarted,
     bool:g_roundstarted, bool:g_roundended, bool:g_czero, g_class_name[MAX_CLASSES+1][32], 
     g_classcount, g_class_desc[MAX_CLASSES+1][32], g_class_pmodel[MAX_CLASSES+1][64], 
     g_class_wmodel[MAX_CLASSES+1][64], Float:g_class_data[MAX_CLASSES+1][MAX_DATA];
@@ -400,8 +398,8 @@ public plugin_precache()
 	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "env_fog"))
 	if(ent)
 	{
-		fm_set_kvd(ent, "density", FOG_DENSITY, "env_fog")
-		fm_set_kvd(ent, "rendercolor", FOG_COLOR, "env_fog")
+		DispatchKeyValue(ent, "density", FOG_DENSITY)
+		DispatchKeyValue(ent, "rendercolor", FOG_COLOR)
 	}
 	#endif
 }
@@ -438,7 +436,6 @@ public plugin_init()
 	register_forward(FM_PlayerPostThink, "fwd_player_postthink")
 
 	RegisterHam(Ham_TakeDamage, "player", "bacon_takedamage_player")
-	RegisterHam(Ham_TakeDamage, "player", "bacon_takedamage_player_post", 1);
 	RegisterHam(Ham_Killed, "player", "bacon_killed_player")
 	RegisterHam(Ham_Spawn, "player", "bacon_spawn_player_post", 1)
 	RegisterHam(Ham_TraceAttack, "player", "bacon_traceattack_player")
@@ -791,7 +788,7 @@ public msg_clcorpse(msgid, dest, id)
 		return PLUGIN_CONTINUE
 	
 	static ent
-	ent = fm_find_ent_by_owner(-1, MODEL_CLASSNAME, id)
+	ent = find_ent_by_owner(-1, MODEL_CLASSNAME, id)
 	
 	if(ent)
 	{
@@ -927,10 +924,10 @@ public event_curweapon(id)
 		case 1:
 		{
 			static ammo
-			ammo = fm_get_user_bpammo(id, weapon)
+			ammo = cs_get_user_bpammo(id, weapon)
 			
 			if(ammo < 1) 
-				fm_set_user_bpammo(id, weapon, maxammo)
+				cs_set_user_bpammo(id, weapon, maxammo)
 		}
 		case 2:
 		{
@@ -941,9 +938,9 @@ public event_curweapon(id)
 				get_weaponname(weapon, weaponname, 31)
 				
 				static ent 
-				ent = fm_find_ent_by_owner(-1, weaponname, id)
+				ent = find_ent_by_owner(-1, weaponname, id)
 				
-				fm_set_weapon_ammo(ent, maxammo)
+				cs_set_weapon_ammo(ent, maxammo)
 			}
 		}
 	}	
@@ -1307,17 +1304,6 @@ public bacon_takedamage_player(victim, inflictor, attacker, Float:damage, damage
 	return HAM_HANDLED;
 }
 
-public bacon_takedamage_player_post(victim, inflictor, attacker, Float:damage, damagetype)
-{
-	if (g_infecting)
-	{
-		client_print(0, print_chat, "eat eat");
-		set_ent_data_float(victim, "CBasePlayer", "m_flVelocityModifier", 0.001);
-
-		g_infecting = false;
-	}
-}
-
 public bacon_killed_player(victim, killer, shouldgib)
 {
 	if(!is_user_alive(killer) || g_zombie[killer] || !g_zombie[victim])
@@ -1345,15 +1331,15 @@ public bacon_killed_player(victim, killer, shouldgib)
 			if(maxclip)
 			{
 				get_weaponname(weapon, weaponname, 31)
-				ent = fm_find_ent_by_owner(-1, weaponname, killer)
+				ent = find_ent_by_owner(-1, weaponname, killer)
 					
-				fm_set_weapon_ammo(ent, maxclip)
+				cs_set_weapon_ammo(ent, maxclip)
 			}
 		}
 		case 2:
 		{
 			if(!user_has_weapon(killer, CSW_HEGRENADE))
-				bacon_give_weapon(killer, "weapon_hegrenade")
+				give_item(killer, "weapon_hegrenade")
 		}
 		case 3:
 		{
@@ -1362,13 +1348,13 @@ public bacon_killed_player(victim, killer, shouldgib)
 			if(maxclip)
 			{
 				get_weaponname(weapon, weaponname, 31)
-				ent = fm_find_ent_by_owner(-1, weaponname, killer)
+				ent = find_ent_by_owner(-1, weaponname, killer)
 					
-				fm_set_weapon_ammo(ent, maxclip)
+				cs_set_weapon_ammo(ent, maxclip)
 			}
 				
 			if(!user_has_weapon(killer, CSW_HEGRENADE))
-				bacon_give_weapon(killer, "weapon_hegrenade")
+				give_item(killer, "weapon_hegrenade")
 		}
 	}
 	return HAM_IGNORED
@@ -1619,9 +1605,9 @@ public task_stripngive(taskid)
 	
 	if(is_user_alive(id))
 	{
-		fm_strip_user_weapons(id)
+		strip_user_weapons(id)
 		fm_reset_user_primary(id)
-		bacon_give_weapon(id, "weapon_knife")
+		give_item(id, "weapon_knife")
 		
 		set_pev(id, pev_weaponmodel2, "")
 		set_pev(id, pev_viewmodel2, g_class_wmodel[g_player_class[id]])
@@ -1884,7 +1870,7 @@ public cure_user(id)
 	g_falling[id] = false
 
 	cs_reset_user_model(id)
-	fm_set_user_nvg(id, 0)
+	cs_set_user_nvg(id, 0)
 	set_pev(id, pev_gravity, 1.0)
 	
 	static viewmodel[64]
@@ -2289,152 +2275,6 @@ stock bool:fm_is_hull_vacant(const Float:origin[3], hull)
 	return (!get_tr2(tr, TR_StartSolid) && !get_tr2(tr, TR_AllSolid) && get_tr2(tr, TR_InOpen)) ? true : false
 }
 
-stock fm_set_kvd(entity, const key[], const value[], const classname[] = "") 
-{
-	set_kvd(0, KV_ClassName, classname)
-	set_kvd(0, KV_KeyName, key)
-	set_kvd(0, KV_Value, value)
-	set_kvd(0, KV_fHandled, 0)
-
-	return dllfunc(DLLFunc_KeyValue, entity, 0)
-}
-
-stock fm_strip_user_weapons(index) 
-{
-	static stripent
-	if(!pev_valid(stripent))
-	{
-		stripent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "player_weaponstrip"))
-		dllfunc(DLLFunc_Spawn, stripent), set_pev(stripent, pev_solid, SOLID_NOT)
-	}
-	dllfunc(DLLFunc_Use, stripent, index)
-	
-	return 1
-}
-
-stock fm_set_entity_visibility(index, visible = 1)
-	set_pev(index, pev_effects, visible == 1 ? pev(index, pev_effects) & ~EF_NODRAW : pev(index, pev_effects) | EF_NODRAW)
-
-stock fm_find_ent_by_owner(index, const classname[], owner) 
-{
-	static ent
-	ent = index
-	
-	while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", classname)) && pev(ent, pev_owner) != owner) {}
-	
-	return ent
-}
-
-stock bacon_give_weapon(index, weapon[])
-{
-	if(!equal(weapon,"weapon_", 7))
-		return 0
-
-	static ent
-	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, weapon))
-	
-	if(!pev_valid(ent)) 
-		return 0
-    
-	set_pev(ent, pev_spawnflags, SF_NORESPAWN)
-	dllfunc(DLLFunc_Spawn, ent)
-   
-	if(!ExecuteHamB(Ham_AddPlayerItem, index, ent))
-	{
-		if(pev_valid(ent)) set_pev(ent, pev_flags, pev(ent, pev_flags) | FL_KILLME)
-		return 0
-	}
-	ExecuteHamB(Ham_Item_AttachToPlayer, ent, index)
-
-	return 1
-}
-
-stock bacon_strip_weapon(index, weapon[])
-{
-	if(!equal(weapon, "weapon_", 7)) 
-		return 0
-
-	static weaponid 
-	weaponid = get_weaponid(weapon)
-	
-	if(!weaponid) 
-		return 0
-
-	static weaponent
-	weaponent = fm_find_ent_by_owner(-1, weapon, index)
-	
-	if(!weaponent) 
-		return 0
-
-	if(get_user_weapon(index) == weaponid) 
-		ExecuteHamB(Ham_Weapon_RetireWeapon, weaponent)
-
-	if(!ExecuteHamB(Ham_RemovePlayerItem, index, weaponent)) 
-		return 0
-	
-	ExecuteHamB(Ham_Item_Kill, weaponent)
-	set_pev(index, pev_weapons, pev(index, pev_weapons) & ~(1<<weaponid))
-
-	return 1
-}
-
-stock fm_get_user_bpammo(index, weapon)
-{
-	static offset
-	switch(weapon)
-	{
-		case CSW_AWP: offset = OFFSET_AMMO_338MAGNUM
-		case CSW_SCOUT, CSW_AK47, CSW_G3SG1: offset = OFFSET_AMMO_762NATO
-		case CSW_M249: offset = OFFSET_AMMO_556NATOBOX
-		case CSW_FAMAS, CSW_M4A1, CSW_AUG, 
-		CSW_SG550, CSW_GALI, CSW_SG552: offset = OFFSET_AMMO_556NATO
-		case CSW_M3, CSW_XM1014: offset = OFFSET_AMMO_BUCKSHOT
-		case CSW_USP, CSW_UMP45, CSW_MAC10: offset = OFFSET_AMMO_45ACP
-		case CSW_FIVESEVEN, CSW_P90: offset = OFFSET_AMMO_57MM
-		case CSW_DEAGLE: offset = OFFSET_AMMO_50AE
-		case CSW_P228: offset = OFFSET_AMMO_357SIG
-		case CSW_GLOCK18, CSW_TMP, CSW_ELITE, 
-		CSW_MP5NAVY: offset = OFFSET_AMMO_9MM
-		default: offset = 0
-	}
-	return offset ? get_pdata_int(index, offset) : 0
-}
-
-stock fm_set_user_bpammo(index, weapon, amount)
-{
-	static offset
-	switch(weapon)
-	{
-		case CSW_AWP: offset = OFFSET_AMMO_338MAGNUM
-		case CSW_SCOUT, CSW_AK47, CSW_G3SG1: offset = OFFSET_AMMO_762NATO
-		case CSW_M249: offset = OFFSET_AMMO_556NATOBOX
-		case CSW_FAMAS, CSW_M4A1, CSW_AUG, 
-		CSW_SG550, CSW_GALI, CSW_SG552: offset = OFFSET_AMMO_556NATO
-		case CSW_M3, CSW_XM1014: offset = OFFSET_AMMO_BUCKSHOT
-		case CSW_USP, CSW_UMP45, CSW_MAC10: offset = OFFSET_AMMO_45ACP
-		case CSW_FIVESEVEN, CSW_P90: offset = OFFSET_AMMO_57MM
-		case CSW_DEAGLE: offset = OFFSET_AMMO_50AE
-		case CSW_P228: offset = OFFSET_AMMO_357SIG
-		case CSW_GLOCK18, CSW_TMP, CSW_ELITE, 
-		CSW_MP5NAVY: offset = OFFSET_AMMO_9MM
-		default: offset = 0
-	}
-	
-	if(offset) 
-		set_pdata_int(index, offset, amount)
-	
-	return 1
-}
-
-stock fm_set_user_nvg(index, onoff = 1)
-{
-	static nvg
-	nvg = get_pdata_int(index, OFFSET_NVG)
-	
-	set_pdata_int(index, OFFSET_NVG, onoff == 1 ? nvg | HAS_NVG : nvg & ~HAS_NVG)
-	return 1
-}
-
 stock str_count(str[], searchchar)
 {
 	static maxlen
@@ -2473,7 +2313,7 @@ stock set_zombie_attibutes(index)
 	//set_pev(index, pev_rendermode, kRenderTransTexture)
 	
 	fm_set_user_armortype(index, ARMOR_NONE)
-	fm_set_user_nvg(index)
+	cs_set_user_nvg(index)
 	
 	if(get_pcvar_num(cvar_autonvg)) 
 		engclient_cmd(index, "nightvision")
@@ -2571,9 +2411,9 @@ stock equipweapon(id, weapon)
 			weaponid[0] = -1
 		
 		if(weaponid[0] != weaponid[1])
-			bacon_give_weapon(id, g_primaryweapons[g_player_weapons[id][0]][1])
+			give_item(id, g_primaryweapons[g_player_weapons[id][0]][1])
 		
-		fm_set_user_bpammo(id, weaponid[1], g_weapon_ammo[weaponid[1]][MAX_AMMO])
+		cs_set_user_bpammo(id, weaponid[1], g_weapon_ammo[weaponid[1]][MAX_AMMO])
 	}
 
 	if(weapon & EQUIP_SEC)
@@ -2594,17 +2434,46 @@ stock equipweapon(id, weapon)
 			weaponid[0] = -1
 		
 		if(weaponid[0] != weaponid[1])
-			bacon_give_weapon(id, g_secondaryweapons[g_player_weapons[id][1]][1])
+			give_item(id, g_secondaryweapons[g_player_weapons[id][1]][1])
 		
-		fm_set_user_bpammo(id, weaponid[1], g_weapon_ammo[weaponid[1]][MAX_AMMO])
+		cs_set_user_bpammo(id, weaponid[1], g_weapon_ammo[weaponid[1]][MAX_AMMO])
 	}
 	
 	if(weapon & EQUIP_GREN)
 	{
 		static i
 		for(i = 0; i < sizeof g_grenades; i++) if(!user_has_weapon(id, get_weaponid(g_grenades[i])))
-			bacon_give_weapon(id, g_grenades[i])
+			give_item(id, g_grenades[i])
 	}
+}
+
+stock bacon_strip_weapon(index, weapon[])
+{
+	if(!equal(weapon, "weapon_", 7)) 
+		return 0
+
+	static weaponid 
+	weaponid = get_weaponid(weapon)
+
+	if(!weaponid) 
+		return 0
+
+	static weaponent
+	weaponent = find_ent_by_owner(-1, weapon, index)
+
+	if(!weaponent) 
+		return 0
+
+	if(get_user_weapon(index) == weaponid) 
+		ExecuteHamB(Ham_Weapon_RetireWeapon, weaponent)
+
+	if(!ExecuteHamB(Ham_RemovePlayerItem, index, weaponent)) 
+		return 0
+
+	ExecuteHamB(Ham_Item_Kill, weaponent)
+	set_pev(index, pev_weapons, pev(index, pev_weapons) & ~(1<<weaponid))
+	
+	return 1;
 }
 
 stock add_delay(index, const task[])
