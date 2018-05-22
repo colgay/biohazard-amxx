@@ -500,7 +500,7 @@ public plugin_init()
 	new mod[3]
 	get_modname(mod, 2)
 	
-	g_czero = (mod[0] == 'c' && mod[1] == 'z') ? true : false
+	g_czero = (mod[0] == 'c' && mod[1] == 'z') ? true : false;
 	
 	new skyname[32]
 	get_pcvar_string(cvar_skyname, skyname, 31)
@@ -597,61 +597,64 @@ public cmd_jointeam(id)
 {
 	if(is_user_alive(id) && g_zombie[id])
 	{
-		client_print(id, print_center, "%L", id, "CMD_TEAMCHANGE")
-		return PLUGIN_HANDLED
+		client_print(id, print_center, "%L", id, "CMD_TEAMCHANGE");
+		return PLUGIN_HANDLED;
 	}
-	return PLUGIN_CONTINUE
+	return PLUGIN_CONTINUE;
 }
 
 public cmd_classmenu(id)
-	if(g_classcount > 1) display_classmenu(id, g_menuposition[id] = 0)
-	
+{
+	if(g_classcount > 1)
+		display_classmenu(id, g_menuposition[id] = 0);
+}
+
 public cmd_enablemenu(id)
 {	
 	if(get_pcvar_num(cvar_weaponsmenu))
 	{
-		client_print(id, print_chat, "%L", id, g_showmenu[id] == false ? "MENU_REENABLED" : "MENU_ALENABLED")
-		g_showmenu[id] = true
+		client_print(id, print_chat, "%L", id, g_showmenu[id] == false ? "MENU_REENABLED" : "MENU_ALENABLED");
+		g_showmenu[id] = true;
 	}
 }
 
 public cmd_helpmotd(id)
 {
-	static motd[2048]
-	formatex(motd, 2047, "%L", id, "HELP_MOTD")
-	replace(motd, 2047, "#Version#", VERSION)
+	static motd[2048];
+	formatex(motd, 2047, "%L", id, "HELP_MOTD");
+	replace(motd, 2047, "#Version#", VERSION);
 	
-	show_motd(id, motd, "Biohazard Help")
+	show_motd(id, motd, "Biohazard Help");
 }	
 
 public cmd_infectuser(id, level, cid)
 {
 	if(!cmd_access(id, level, cid, 2))
-		return PLUGIN_HANDLED_MAIN
+		return PLUGIN_HANDLED_MAIN;
 	
-	static arg1[32]
-	read_argv(1, arg1, 31)
+	static arg1[32];
+	read_argv(1, arg1, 31);
 	
-	static target
-	target = cmd_target(id, arg1, (CMDTARGET_OBEY_IMMUNITY|CMDTARGET_ALLOW_SELF|CMDTARGET_ONLY_ALIVE))
+	static target;
+	target = cmd_target(id, arg1, (CMDTARGET_OBEY_IMMUNITY|CMDTARGET_ALLOW_SELF|CMDTARGET_ONLY_ALIVE));
 	
 	if(!is_user_connected(target) || g_zombie[target])
-		return PLUGIN_HANDLED_MAIN
+		return PLUGIN_HANDLED_MAIN;
 	
 	if(!allow_infection())
 	{
 		console_print(id, "%L", id, "CMD_MAXZOMBIES")
-		return PLUGIN_HANDLED_MAIN
+		return PLUGIN_HANDLED_MAIN;
 	}
 	
 	if(!g_gamestarted)
 	{
 		console_print(id, "%L", id, "CMD_GAMENOTSTARTED")
-		return PLUGIN_HANDLED_MAIN
+		return PLUGIN_HANDLED_MAIN;
 	}
 			
-	static name[32] 
-	get_user_name(target, name, 31)
+	static name[32];
+	get_user_name(target, name, 31);
 	
 	console_print(id, "%L", id, "CMD_INFECTED", name)
 	infect_user(target, 0)
@@ -717,14 +720,18 @@ public msg_statusicon(msgid, dest, id)
 	static icon[3]
 	get_msg_arg_string(2, icon, 2)
 	
-	return (icon[0] == 'c' && icon[1] == '4') ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+	return (icon[0] == 'c' && icon[1] == '4') ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
 
 public msg_weaponpickup(msgid, dest, id)
-	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+{
+	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
+}
 
 public msg_ammopickup(msgid, dest, id)
-	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+{
+	return g_zombie[id] ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
+}
 
 public msg_deathmsg(msgid, dest, id) 
 {
@@ -1130,7 +1137,7 @@ public fwd_spawn(ent)
 	{
 		if(equal(classname, g_remove_entities[i]))
 		{
-			engfunc(EngFunc_RemoveEntity, ent)
+			remove_entity(ent)
 			return FMRES_SUPERCEDE
 		}
 	}
@@ -1162,13 +1169,19 @@ public fwd_clientkill(id)
 }
 
 public bacon_touch_weapon(ent, id)
-	return (is_user_alive(id) && g_zombie[id]) ? HAM_SUPERCEDE : HAM_IGNORED
+{
+	return (is_user_alive(id) && g_zombie[id]) ? HAM_SUPERCEDE : HAM_IGNORED;
+}
 
 public bacon_use_tank(ent, caller, activator, use_type, Float:value)
-	return (is_user_alive(caller) && g_zombie[caller]) ? HAM_SUPERCEDE : HAM_IGNORED
+{
+	return (is_user_alive(caller) && g_zombie[caller]) ? HAM_SUPERCEDE : HAM_IGNORED;
+}
 
 public bacon_use_pushable(ent, caller, activator, use_type, Float:value)
+{
 	return HAM_SUPERCEDE
+}
 
 public bacon_traceattack_player(victim, attacker, Float:damage, Float:direction[3], tracehandle, damagetype)
 {
@@ -1551,7 +1564,7 @@ public task_lights()
 	static light[2]
 	get_pcvar_string(cvar_lights, light, 1)
 	
-	engfunc(EngFunc_LightStyle, 0, light)
+	set_lights(light);
 }
 
 public task_updatescore(params[])
@@ -1689,7 +1702,7 @@ public task_newround()
 		spawndata[0] = g_spawns[spawn_index][0]
 		spawndata[1] = g_spawns[spawn_index][1]
 		spawndata[2] = g_spawns[spawn_index][2]
-		engfunc(EngFunc_SetOrigin, id, spawndata)
+		entity_set_origin(id, spawndata);
 
 		spawndata[0] = g_spawns[spawn_index][3]
 		spawndata[1] = g_spawns[spawn_index][4]
@@ -1900,7 +1913,7 @@ public display_equipmenu(id)
   	len = formatex(menubody, 511, "\y%L^n^n", id, "MENU_TITLE1")
 	
 	static bool:hasweap
-	hasweap = ((g_player_weapons[id][0]) != -1 && (g_player_weapons[id][1] != -1)) ? true : false
+	hasweap = ((g_player_weapons[id][0]) != -1 && (g_player_weapons[id][1] != -1)) ? true : false;
 	
 	len += formatex(menubody[len], 511 - len,"\w1. %L^n", id, "MENU_NEWWEAPONS")
 	len += formatex(menubody[len], 511 - len,"%s2. %L^n", hasweap ? "\w" : "\d", id, "MENU_PREVSETUP")
@@ -1951,7 +1964,7 @@ public display_weaponmenu(id, menuid, pos)
 	start = pos * 8
 	
 	static maxitem
-	maxitem = menuid == MENU_PRIMARY ? sizeof g_primaryweapons : sizeof g_secondaryweapons
+	maxitem = menuid == MENU_PRIMARY ? sizeof g_primaryweapons : sizeof g_secondaryweapons;
 
   	if(start >= maxitem)
     		start = pos = g_menuposition[id]
@@ -2269,10 +2282,14 @@ public native_get_class_id(classname[])
 }
 
 public Float:native_get_class_data(classid, dataid)
+{
 	return g_class_data[classid][dataid]
+}
 
 public native_set_class_data(classid, dataid, Float:value)
+{
 	g_class_data[classid][dataid] = value
+}
 
 stock bool:fm_is_hull_vacant(const Float:origin[3], hull)
 {
@@ -2359,7 +2376,7 @@ stock bool:allow_infection()
 	}
 	
 	maxzombies = clamp(get_pcvar_num(cvar_maxzombies), 1, 31)
-	return (count[0] < maxzombies && count[1] > 1) ? true : false
+	return (count[0] < maxzombies && count[1] > 1) ? true : false;
 }
 
 stock randomly_pick_zombie()
@@ -2391,7 +2408,7 @@ stock randomly_pick_zombie()
 	if(data[0] > 0 &&  data[1] < 1) 
 		return players[0][_random(data[2])]
 	
-	return (data[0] < 1 && data[1] > 0) ?  players[1][_random(data[3])] : 0
+	return (data[0] < 1 && data[1] > 0) ?  players[1][_random(data[3])] : 0;
 }
 
 stock equipweapon(id, weapon)
