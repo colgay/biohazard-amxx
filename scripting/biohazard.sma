@@ -398,8 +398,16 @@ public plugin_precache()
 	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "env_fog"))
 	if(ent)
 	{
-		DispatchKeyValue(ent, "density", FOG_DENSITY)
-		DispatchKeyValue(ent, "rendercolor", FOG_COLOR)
+		new colorcode[16], color[3];
+		color[0] = random_num(55, 75);
+		color[1] = random_num(55, 75);
+		color[2] = random_num(55, 75);
+
+		formatex(colorcode, charsmax(colorcode), "%d %d %d", color[0], color[1], color[2]);
+
+		DispatchKeyValue(ent, "density", FOG_DENSITY);
+		DispatchKeyValue(ent, "rendercolor", colorcode);
+		//DispatchKeyValue(ent, "rendercolor", FOG_COLORS[random(sizeof FOG_COLORS)]);
 	}
 	#endif
 }
