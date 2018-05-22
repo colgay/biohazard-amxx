@@ -380,28 +380,28 @@ public plugin_precache()
 	
 	g_fwd_spawn = register_forward(FM_Spawn, "fwd_spawn")
 	
-	g_buyzone = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "func_buyzone"))
+	g_buyzone = create_entity("func_buyzone");
 	if(g_buyzone) 
 	{
-		dllfunc(DLLFunc_Spawn, g_buyzone)
+		DispatchSpawn(g_buyzone);
 		set_pev(g_buyzone, pev_solid, SOLID_NOT)
 	}
 	
-	new ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_bomb_target"))
+	new ent = create_entity("info_bomb_target");
 	if(ent) 
 	{
-		dllfunc(DLLFunc_Spawn, ent)
+		DispatchSpawn(ent);
 		set_pev(ent, pev_solid, SOLID_NOT)
 	}
 
 	#if FOG_ENABLE
-	ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "env_fog"))
+	ent = create_entity("env_fog");
 	if(ent)
 	{
 		new colorcode[16], color[3];
-		color[0] = random_num(55, 75);
-		color[1] = random_num(55, 75);
-		color[2] = random_num(55, 75);
+		color[0] = random_num(50, 76);
+		color[1] = random_num(50, 76);
+		color[2] = random_num(50, 76);
 
 		formatex(colorcode, charsmax(colorcode), "%d %d %d", color[0], color[1], color[2]);
 
