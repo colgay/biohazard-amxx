@@ -275,7 +275,7 @@ new const g_teaminfo[][] =
 
 new g_maxplayers, g_spawncount, g_buyzone, g_botclient_pdata, g_sync_hpdisplay, 
     g_sync_msgdisplay, g_fwd_spawn, g_fwd_result, g_fwd_infect, g_fwd_gamestart, 
-    g_msg_flashlight, g_msg_teaminfo, g_msg_scoreattrib, g_msg_money, g_msg_scoreinfo, 
+    g_msg_flashlight, g_msg_teaminfo, g_msg_scoreattrib, g_msg_scoreinfo, 
     g_msg_deathmsg , g_msg_screenfade, g_msg_damage;
 	
 new	Float:g_buytime,  Float:g_spawns[MAX_SPAWNS+1][9],
@@ -290,12 +290,12 @@ new cvar_randomspawn, cvar_skyname, cvar_autoteambalance[4], cvar_starttime, cva
     cvar_respawnaszombie, cvar_punishsuicide, cvar_infectmoney, cvar_showtruehealth,
     cvar_obeyarmor, cvar_impactexplode, cvar_caphealthdisplay, cvar_zombie_hpmulti,
     cvar_randomclass, cvar_zombiemulti, cvar_knockback, cvar_knockback_dist, cvar_ammo,
-    cvar_knockback_duck, cvar_killreward, cvar_painshockfree, cvar_zombie_class,
-    cvar_shootobjects, cvar_pushpwr_weapon, cvar_pushpwr_zombie
+    cvar_knockback_duck, cvar_killreward, cvar_zombie_class, cvar_shootobjects, 
+	cvar_pushpwr_weapon, cvar_pushpwr_zombie
     
 new bool:g_zombie[MAX_PLAYERS+1], bool:g_falling[MAX_PLAYERS+1], bool:g_disconnected[MAX_PLAYERS+1], bool:g_blockmodel[MAX_PLAYERS+1], 
     bool:g_showmenu[MAX_PLAYERS+1], bool:g_menufailsafe[MAX_PLAYERS+1], bool:g_preinfect[MAX_PLAYERS+1], bool:g_welcomemsg[MAX_PLAYERS+1], 
-    bool:g_suicide[MAX_PLAYERS+1], Float:g_regendelay[MAX_PLAYERS+1], Float:g_hitdelay[MAX_PLAYERS+1], g_mutate[MAX_PLAYERS+1], g_victim[MAX_PLAYERS+1], 
+    bool:g_suicide[MAX_PLAYERS+1], Float:g_regendelay[MAX_PLAYERS+1], Float:g_hitdelay[MAX_PLAYERS+1], g_mutate[MAX_PLAYERS+1],
 	g_menuposition[MAX_PLAYERS+1], g_player_class[MAX_PLAYERS+1], g_player_weapons[33][2]
 
 public plugin_precache()
@@ -319,7 +319,6 @@ public plugin_precache()
 	cvar_winsounds = register_cvar("bh_winsounds", "1")
 	cvar_autonvg = register_cvar("bh_autonvg", "1")
 	cvar_respawnaszombie = register_cvar("bh_respawnaszombie", "1")
-	cvar_painshockfree = register_cvar("bh_painshockfree", "1")
 	cvar_knockback = register_cvar("bh_knockback", "1")
 	cvar_knockback_duck = register_cvar("bh_knockback_duck", "1")
 	cvar_knockback_dist = register_cvar("bh_knockback_dist", "280.0")
@@ -439,6 +438,7 @@ public plugin_init()
 	register_forward(FM_PlayerPostThink, "fwd_player_postthink")
 
 	RegisterHam(Ham_TakeDamage, "player", "bacon_takedamage_player")
+	RegisterHam(Ham_TakeDamage, "player", "bacon_takedamage_player_post", 1);
 	RegisterHam(Ham_Killed, "player", "bacon_killed_player")
 	RegisterHam(Ham_Spawn, "player", "bacon_spawn_player_post", 1)
 	RegisterHam(Ham_TraceAttack, "player", "bacon_traceattack_player")
@@ -481,7 +481,6 @@ public plugin_init()
 	g_msg_scoreattrib = get_user_msgid("ScoreAttrib")
 	g_msg_scoreinfo = get_user_msgid("ScoreInfo")
 	g_msg_deathmsg = get_user_msgid("DeathMsg")
-	g_msg_money = get_user_msgid("Money")
 	g_msg_screenfade = get_user_msgid("ScreenFade")
 	g_msg_damage = get_user_msgid("Damage");
 	
@@ -554,7 +553,6 @@ public client_connect(id)
 	g_disconnected[id] = false
 	g_falling[id] = false
 	g_menufailsafe[id] = false
-	g_victim[id] = 0
 	g_mutate[id] = -1
 	g_player_class[id] = 0
 	g_player_weapons[id][0] = -1
@@ -966,7 +964,7 @@ public event_armortype(id)
 public event_damage(victim)
 {
 	if(!is_user_alive(victim) || !g_gamestarted)
-		return PLUGIN_CONTINUE
+		return;
 	
 	if(g_zombie[victim])
 	{
@@ -976,62 +974,6 @@ public event_damage(victim)
 		g_regendelay[victim] = gametime + g_class_data[g_player_class[victim]][DATA_HITREGENDLY]
 		g_hitdelay[victim] = gametime + g_class_data[g_player_class[victim]][DATA_HITDELAY]
 	}
-	else
-	{
-		static attacker
-		attacker = get_user_attacker(victim)
-		
-		if(!is_user_alive(attacker) || !g_zombie[attacker] || g_infecting)
-			return PLUGIN_CONTINUE
-		
-		if(g_victim[attacker] == victim)
-		{
-			g_infecting = true
-			g_victim[attacker] = 0
-
-			message_begin(MSG_ALL, g_msg_deathmsg)
-			write_byte(attacker)
-			write_byte(victim)
-			write_byte(0)
-			write_string(g_infection_name)
-			message_end()
-			
-			message_begin(MSG_ALL, g_msg_scoreattrib)
-			write_byte(victim)
-			write_byte(0)
-			message_end()
-
-			message_begin(MSG_ONE, g_msg_damage, _, victim);
-			write_byte(read_data(1)); // dmg save
-			write_byte(64); // dmg take
-			write_byte(read_data(3)); // dmg type
-			write_coord(read_data(4)); // x
-			write_coord(read_data(5)); // y
-			write_coord(read_data(6)); // z
-			message_end();
-
-			set_ent_data_float(victim, "CBasePlayer", "m_flVelocityModifier", 0.0);
-			
-			infect_user(victim, attacker)
-			
-			static Float:frags, deaths
-			pev(attacker, pev_frags, frags)
-			deaths = fm_get_user_deaths(victim)
-			
-			set_pev(attacker, pev_frags, frags  + 1.0)
-			fm_set_user_deaths(victim, deaths + 1)
-			
-			fm_set_user_money(attacker, get_pcvar_num(cvar_infectmoney))
-		
-			static params[2]
-			params[0] = attacker 
-			params[1] = victim
-	
-			set_task(0.3, "task_updatescore", TASKID_UPDATESCR, params, 2)
-		}
-		g_infecting = false
-	}
-	return PLUGIN_CONTINUE
 }
 
 public fwd_player_prethink(id)
@@ -1042,15 +984,7 @@ public fwd_player_prethink(id)
 	static flags
 	flags = pev(id, pev_flags)
 	
-	if(flags & FL_ONGROUND)
-	{
-		if(get_pcvar_num(cvar_painshockfree))
-		{
-			pev(id, pev_velocity, g_vecvel)
-			g_brestorevel = true
-		}
-	}
-	else
+	if(~flags & FL_ONGROUND)
 	{
 		static Float:fallvelocity
 		pev(id, pev_flFallVelocity, fallvelocity)
@@ -1299,54 +1233,89 @@ public bacon_touch_grenade(ent, world)
 
 public bacon_takedamage_player(victim, inflictor, attacker, Float:damage, damagetype)
 {
-	if(damagetype & DMG_GENERIC || victim == attacker || !is_user_alive(victim) || !is_user_connected(attacker))
-		return HAM_IGNORED
+	if (damagetype & DMG_GENERIC || victim == attacker || !is_user_alive(victim) || !is_user_connected(attacker))
+		return HAM_IGNORED;
 
-	if(!g_gamestarted || (!g_zombie[victim] && !g_zombie[attacker]) || ((damagetype & DMG_HEGRENADE) && g_zombie[attacker]))
-		return HAM_SUPERCEDE
+	if (g_zombie[victim] == g_zombie[attacker])
+		return HAM_IGNORED;
+
+	if (!g_gamestarted)
+		return HAM_SUPERCEDE;
 	
-	if(!g_zombie[attacker])
+	if (!g_zombie[attacker])
 	{
-		static pclass
-		pclass = g_player_class[victim] 
+		static pclass;
+		pclass = g_player_class[victim];
 		
-		damage *= (damagetype & DMG_HEGRENADE) ? g_class_data[pclass][DATA_HEDEFENCE] : g_class_data[pclass][DATA_DEFENCE]
-		SetHamParamFloat(4, damage)
+		damage *= (damagetype & DMG_HEGRENADE) ? g_class_data[pclass][DATA_HEDEFENCE] : g_class_data[pclass][DATA_DEFENCE];
+		SetHamParamFloat(4, damage);
 	}
 	else
 	{
-		if(get_user_weapon(attacker) != CSW_KNIFE)
-			return HAM_SUPERCEDE
+		if(inflictor != attacker || get_user_weapon(attacker) != CSW_KNIFE)
+			return HAM_IGNORED;
 
-		damage *= g_class_data[g_player_class[attacker]][DATA_ATTACK]
+		damage *= g_class_data[g_player_class[attacker]][DATA_ATTACK];
 		
-		static Float:armor
-		pev(victim, pev_armorvalue, armor)
+		new Float:armor;
+		pev(victim, pev_armorvalue, armor);
 		
 		if(get_pcvar_num(cvar_obeyarmor) && armor > 0.0)
 		{
-			armor -= damage
+			armor -= damage;
 			
 			if(armor < 0.0) 
-				armor = 0.0
+				armor = 0.0;
 			
-			set_pev(victim, pev_armorvalue, armor)
-			SetHamParamFloat(4, 0.0)
+			set_pev(victim, pev_armorvalue, armor);
+			SetHamParamFloat(4, 0.0);
 		}
 		else
 		{
-			static bool:infect
-			infect = allow_infection()
-			
-			g_victim[attacker] = infect ? victim : 0
-					
-			if(!g_infecting)
-				SetHamParamFloat(4, infect ? 0.0 : damage)
-			else	
-				SetHamParamFloat(4, 0.0)
+			if (allow_infection())
+			{
+				new Float:origin[3];
+				pev(attacker, pev_origin, origin);
+
+				send_deathmsg(attacker, victim, false, g_infection_name);
+				send_scoreattrib(victim, false);
+				send_damage_msg(victim, 0, floatround(damage), (DMG_BULLET|DMG_NEVERGIB), origin); // send dmg msg
+
+				// slowdown effect
+				set_ent_data_float(victim, "CBasePlayer", "m_flVelocityModifier", 0.0);
+				
+				infect_user(victim, attacker);
+				
+				new Float:frags;
+				new deaths = cs_get_user_deaths(victim);
+				pev(attacker, pev_frags, frags);
+
+				set_pev(attacker, pev_frags, frags + 1.0);
+				cs_set_user_deaths(victim, deaths + 1);
+
+				update_score(attacker);
+				update_score(victim);
+				
+				cs_set_user_money(attacker, cs_get_user_money(attacker) + get_pcvar_num(cvar_infectmoney));
+				return HAM_SUPERCEDE;
+			}
+
+			SetHamParamFloat(4, damage);
 		}
 	}
-	return HAM_HANDLED
+
+	return HAM_HANDLED;
+}
+
+public bacon_takedamage_player_post(victim, inflictor, attacker, Float:damage, damagetype)
+{
+	if (g_infecting)
+	{
+		client_print(0, print_chat, "eat eat");
+		set_ent_data_float(victim, "CBasePlayer", "m_flVelocityModifier", 0.001);
+
+		g_infecting = false;
+	}
 }
 
 public bacon_killed_player(victim, killer, shouldgib)
@@ -2466,23 +2435,6 @@ stock fm_set_user_nvg(index, onoff = 1)
 	return 1
 }
 
-stock fm_set_user_money(index, addmoney, update = 1)
-{
-	static money
-	money = fm_get_user_money(index) + addmoney
-	
-	set_pdata_int(index, OFFSET_CSMONEY, money)
-	
-	if(update)
-	{
-		message_begin(MSG_ONE, g_msg_money, _, index)
-		write_long(clamp(money, 0, 16000))
-		write_byte(1)
-		message_end()
-	}
-	return 1
-}
-
 stock str_count(str[], searchchar)
 {
 	static maxlen
@@ -2675,4 +2627,49 @@ stock precache_player_model(const model[])
 	formatex(buffer, charsmax(buffer), "models/player/%s/%sT.mdl", model, model);
 	if (file_exists(buffer))
 		precache_model(buffer);
+}
+
+stock update_score(id)
+{
+	new frags = get_user_frags(id)
+	new deaths = cs_get_user_deaths(id)
+	new team = _:cs_get_user_team(id)
+	
+	message_begin(MSG_BROADCAST, g_msg_scoreinfo);
+	write_byte(id);
+	write_short(frags);
+	write_short(deaths);
+	write_short(0);
+	write_short(team);
+	message_end();
+}
+
+stock send_deathmsg(attacker, victim, bool:headshot, const weapon[])
+{
+	message_begin(MSG_ALL, g_msg_deathmsg);
+	write_byte(attacker);
+	write_byte(victim);
+	write_byte(headshot);
+	write_string(weapon);
+	message_end();
+}
+
+stock send_scoreattrib(id, bool:val)
+{
+	message_begin(MSG_ALL, g_msg_scoreattrib);
+	write_byte(id);
+	write_byte(val);
+	message_end();
+}
+
+stock send_damage_msg(id, save, take, type, Float:origin[3])
+{
+	message_begin(MSG_ONE, g_msg_damage, _, id);
+	write_byte(save);
+	write_byte(take);
+	write_long(type);
+	write_coord_f(origin[0]);
+	write_coord_f(origin[1]);
+	write_coord_f(origin[2]);
+	message_end();
 }
