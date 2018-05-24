@@ -24,56 +24,42 @@ stock is_biomod_active()
 }
 
 /* Called when a survivor is infected */
-forward event_infect(victim, attacker)
+forward event_infect(victim, attacker);
 
 /* Called when the game starts */
-forward event_gamestart()
+forward event_gamestart();
 
-/* Returns true if the game has started */
-native bool:game_started()
+#define	ZCLASS_NAME 0
+#define	ZCLASS_DESC 1
+#define	ZCLASS_CLASS 2
+#define	ZCLASS_MODEL 3
+#define	ZCLASS_KNIFE 4
+#define	ZCLASS_HEALTH 5
+#define	ZCLASS_SPEED 6
+#define	ZCLASS_GRAVITY 7
+#define	ZCLASS_KNOCKBACK 8
+#define	ZCLASS_LAST 9
 
-/* Makes a user zombie */
-native infect_user(victim, attacker)
+native bio_infect_user(victim, attacker);
 
-/* Makes a user human */
-native cure_user(index)
+native bio_cure_user(id);
 
-/* Infect user before game starts */
-native preinfect_user(index, bool:yesno)
+native bio_register_zclass(const name[], const desc[], const classname[]);
 
-/* Returns 1 if user is a zombie */
-native is_user_zombie(index)
+native bio_register_zclass_model(index, const model[], const knifemdl[]);
 
-/* Returns 1 if the user is infected (before game)*/
-native is_user_infected(index)
+native bio_register_zclass_attr(index, Float:health, Float:speed, Float:gravity, Float:knockback);
 
-/* Returns user zombie class */
-native get_user_class(index)
+native bio_get_zclass_id(const classname[]);
 
-/* Returns zombie class id, -1 otherwise */
-native register_class(classname[], description[])
+native bio_get_zclass_str(index, type, string[], len);
 
-/* Sets zombie player model */
-native set_class_pmodel(classid, player_model[])
+native Float:bio_get_zclass_float(index, type);
 
-/* Sets zombie weapon model */
-native set_class_wmodel(classid, weapon_model[])
+native bio_get_zclass_int(index, type);
 
-/* Returns zombie class id */
-native get_class_id(classname[])
+native bool:bio_is_game_started();
 
-#define DATA_HEALTH      0  //Health value
-#define DATA_SPEED       1  //Speed value
-#define DATA_GRAVITY     2  //Gravity multiplier
-#define DATA_ATTACK      3  //Zombie damage multiplier
-#define DATA_DEFENCE     4  //Bullet damage multiplier
-#define DATA_HEDEFENCE   5  //HE damage multiplier
-#define DATA_HITSPEED    6  //Pain speed multiplier
-#define DATA_HITDELAY    7  //Pain speed delay value
-#define DATA_REGENDLY    8  //Regeneration delay value
-#define DATA_HITREGENDLY 9  //Pain regeneration delay value
-#define DATA_KNOCKBACK   10 //Knockback multiplier
+native bool:bio_is_zombie(id);
 
-/* Return/set value of zombie class data */
-native Float:get_class_data(classid, dataid)
-native set_class_data(classid, dataid, Float:value)
+native bio_get_user_zclass(id);
