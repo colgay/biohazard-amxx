@@ -604,8 +604,9 @@ public cmd_jointeam(id)
 	{
 		client_print(id, print_center, "%L", id, "CMD_TEAMCHANGE");
 		return PLUGIN_HANDLED;
-	}
-	return PLUGIN_CONTINUE;
+	} else client_print(0, print_chat, "ha");
+	
+	return PLUGIN_HANDLED;
 }
 
 public cmd_classmenu(id)
