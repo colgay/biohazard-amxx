@@ -81,6 +81,7 @@
 #define TASKID_WEAPONSMENU 564
 #define TASKID_CHECKSPAWN 423
 #define TASKID_CZBOTPDATA 312
+#define TASKID_RESPAWN 99
 
 #define EQUIP_PRI (1<<0)
 #define EQUIP_SEC (1<<1)
@@ -589,13 +590,14 @@ public client_putinserver(id)
 
 public client_disconnected(id)
 {
-	remove_task(TASKID_STRIPNGIVE + id)
-	remove_task(TASKID_UPDATESCR + id)
-	remove_task(TASKID_SPAWNDELAY + id)
-	remove_task(TASKID_WEAPONSMENU + id)
-	remove_task(TASKID_CHECKSPAWN + id)
+	remove_task(TASKID_STRIPNGIVE + id);
+	remove_task(TASKID_UPDATESCR + id);
+	remove_task(TASKID_SPAWNDELAY + id);
+	remove_task(TASKID_WEAPONSMENU + id);
+	remove_task(TASKID_CHECKSPAWN + id);
+	remove_task(TASKID_RESPAWN + id);
 
-	g_disconnected[id] = true
+	g_disconnected[id] = true;
 }
 
 public cmd_jointeam(id)
@@ -1262,58 +1264,60 @@ public bacon_takedamage_player(victim, inflictor, attacker, Float:damage, damage
 
 public bacon_killed_player(victim, killer, shouldgib)
 {
-	if (!is_user_alive(killer) || g_zombie[killer] || !g_zombie[victim])
-		return HAM_IGNORED
-	
-	static killbonus
-	killbonus = get_pcvar_num(cvar_killbonus)
-	
-	if (killbonus)
-		set_pev(killer, pev_frags, pev(killer, pev_frags) + float(killbonus))
-	
-	static killreward
-	killreward = get_pcvar_num(cvar_killreward)
-	
-	if (!killreward) 
-		return HAM_IGNORED
-	
-	static weapon, maxclip, ent, weaponname[32]
-	switch(killreward)
+	remove_task(victim + TASKID_RESPAWN);
+	set_task(5.0, "task_respawnplayer", victim + TASKID_RESPAWN);
+
+	if (is_user_alive(killer) && !g_zombie[killer] && g_zombie[victim])
 	{
-		case 1: 
+		static killbonus
+		killbonus = get_pcvar_num(cvar_killbonus)
+		
+		if (killbonus)
+			set_pev(killer, pev_frags, pev(killer, pev_frags) + float(killbonus))
+		
+		static killreward
+		killreward = get_pcvar_num(cvar_killreward)
+		
+		if (!killreward) 
+			return;
+		
+		static weapon, maxclip, ent, weaponname[32]
+		switch(killreward)
 		{
-			weapon = get_user_weapon(killer)
-			maxclip = g_weapon_ammo[weapon][MAX_CLIP]
-			if (maxclip)
+			case 1: 
 			{
-				get_weaponname(weapon, weaponname, 31)
-				ent = find_ent_by_owner(-1, weaponname, killer)
-					
-				cs_set_weapon_ammo(ent, maxclip)
+				weapon = get_user_weapon(killer)
+				maxclip = g_weapon_ammo[weapon][MAX_CLIP]
+				if (maxclip)
+				{
+					get_weaponname(weapon, weaponname, 31)
+					ent = find_ent_by_owner(-1, weaponname, killer)
+						
+					cs_set_weapon_ammo(ent, maxclip)
+				}
 			}
-		}
-		case 2:
-		{
-			if (!user_has_weapon(killer, CSW_HEGRENADE))
-				give_item(killer, "weapon_hegrenade")
-		}
-		case 3:
-		{
-			weapon = get_user_weapon(killer)
-			maxclip = g_weapon_ammo[weapon][MAX_CLIP]
-			if (maxclip)
+			case 2:
 			{
-				get_weaponname(weapon, weaponname, 31)
-				ent = find_ent_by_owner(-1, weaponname, killer)
-					
-				cs_set_weapon_ammo(ent, maxclip)
+				if (!user_has_weapon(killer, CSW_HEGRENADE))
+					give_item(killer, "weapon_hegrenade")
 			}
-				
-			if (!user_has_weapon(killer, CSW_HEGRENADE))
-				give_item(killer, "weapon_hegrenade")
+			case 3:
+			{
+				weapon = get_user_weapon(killer)
+				maxclip = g_weapon_ammo[weapon][MAX_CLIP]
+				if (maxclip)
+				{
+					get_weaponname(weapon, weaponname, 31)
+					ent = find_ent_by_owner(-1, weaponname, killer)
+						
+					cs_set_weapon_ammo(ent, maxclip)
+				}
+					
+				if (!user_has_weapon(killer, CSW_HEGRENADE))
+					give_item(killer, "weapon_hegrenade")
+			}
 		}
 	}
-	return HAM_IGNORED
 }
 
 public bacon_spawn_player_post(id)
@@ -1417,6 +1421,22 @@ public bacon_knife_deploy_post(ent)
 			set_pev(id, pev_viewmodel2, model);
 		}
 	}
+}
+
+public task_respawnplayer(taskid)
+{
+	new id = taskid - TASKID_RESPAWN;
+
+	if (g_roundended || !g_gamestarted)
+		return;
+	
+	if (!(1 <= fm_get_user_team(id) <= 2))
+		return;
+	
+	if (is_user_alive(id))
+		return;
+	
+	ExecuteHam(Ham_CS_RoundRespawn, id);
 }
 
 public task_spawned(taskid)
