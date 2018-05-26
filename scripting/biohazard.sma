@@ -603,9 +603,11 @@ public cmd_jointeam(id)
 	if (is_user_alive(id) && g_zombie[id])
 	{
 		client_print(id, print_center, "%L", id, "CMD_TEAMCHANGE");
+		cmd_classmenu(id);
 		return PLUGIN_HANDLED;
 	} else if(is_user_alive(id) && !g_zombie[id]) {
 		client_print(0, print_chat, "ha");
+		cmd_enablemenu(id);
 		return PLUGIN_HANDLED;
 	}
 
