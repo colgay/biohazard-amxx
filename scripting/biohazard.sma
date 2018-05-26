@@ -422,6 +422,7 @@ public plugin_init()
 	set_pcvar_num(cvar_autoteambalance[0], 0)
 
 	register_clcmd("jointeam", "cmd_jointeam")
+	register_clcmd("chooseteam", "cmd_jointeam")
 	register_clcmd("say /class", "cmd_classmenu")
 	register_clcmd("say /guns", "cmd_enablemenu")
 	register_clcmd("say /help", "cmd_helpmotd")
