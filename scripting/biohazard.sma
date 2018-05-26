@@ -604,9 +604,10 @@ public cmd_jointeam(id)
 	{
 		client_print(id, print_center, "%L", id, "CMD_TEAMCHANGE");
 		return PLUGIN_HANDLED;
-	} else client_print(0, print_chat, "ha");
-	
-	return PLUGIN_HANDLED;
+	} else if(is_user_alive(id) && !g_zombie[id]) 
+		client_print(0, print_chat, "ha");
+
+	return PLUGIN_CONTINUE;
 }
 
 public cmd_classmenu(id)
